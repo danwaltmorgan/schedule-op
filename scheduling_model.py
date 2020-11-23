@@ -6,97 +6,112 @@ Created on Sun Nov 22 17:13:02 2020
 """
 
 from ortools.sat.python import cp_model
+import numpy as np
 
 def main():
     
     #define the variables
     residents = 3
-    shifts = 21
+    weeks = 3
     days = 7
-    weeks = 1
-    total_residents = range(residents)
-    total_shifts = range(shifts)
-    total_days = range(days)
-    total_weeks = range(weeks)
-    shift_requests = [[0, 1, 0, 0, 1, 0, 1, 
-                       1, 0, 0, 1, 0, 1, 1,
-                       0, 1, 1, 0, 1, 0, 1],
-                      [0, 1, 0, 0, 1, 0, 1, 
-                       1, 0, 0, 1, 0, 1, 1,
-                       0, 1, 1, 0, 1, 0, 1],
-                      [0, 1, 0, 0, 1, 0, 1, 
-                       1, 0, 0, 1, 0, 1, 1,
-                       0, 1, 1, 0, 1, 0, 1],]
+    shifts = 3
+    num_res = range(residents)
+    num_weeks = range(weeks)
+    num_days = range(days)
+    num_shift = range(shifts)
     
-        
+    shift_requests = np.random.randint(2, size = (residents, weeks, days, shifts))
+    
     min_per_shift = 1
     max_per_shift = 2
-
-    num_shifts_req = 0
     
-    for r in total_residents:
-        for s in total_shifts:
-            num_shifts_req += shift_requests[r][s]
-
-
+        
     
     #create the model
     shift_model = cp_model.CpModel()
 
 
+    #Decision Variables
+    
     x = {}
-    for r in total_residents:
-        for s in total_shifts:
-            x[(r,s)] = shift_model.NewBoolVar('x_r%is%i' % (r,s))
-            
+    for r in num_res:
+        for w in num_weeks:
+            for d in num_days:
+                for s in num_shift:
+                    x[(r, w, d, s)] = shift_model.NewBoolVar('x_r%iw%id%is%i' % (r, w, d, s))
     
     
     #Contraints
     
-    #Every shift must have at least min_per_shift residents and less
-    ##than max_per_shift
-    for s in total_shifts:
-       shift_model.Add(sum(x[r,s] for r in total_residents) >= min_per_shift)
-       shift_model.Add(sum(x[r,s] for r in total_residents) <= max_per_shift)
-      
-                
-    #for r in total_residents:
-        #for w in total_weeks:
+    # min and max per shift
     
-    for r in total_residents:
-        if(r == 1):
-            shift_model.Add(sum(x[r, s] for s in total_shifts) <= 1)
-
+    for w in num_weeks:
+        for d in num_days:
+            for s in num_shift:
+                shift_model.Add(sum(x[r,w,d,s] for r in num_res) >= min_per_shift)
+                shift_model.Add(sum(x[r,w,d,s] for r in num_res) <= min_per_shift)
+    
+   
+    # max shifts per week
+    
+    for w in num_weeks:
+        shift_model.Add(sum(x[r, w, d, s] for r in num_res) <= 10)
         
-    
+    #max days per week
+    for r in num_res:
+        for w in num_weeks:
+            shift_model.Add(sum(x[r, w, d, s] for d in num_res) <= 6)
     
 
     #Opjective
-    shift_model.Maximize(
-        sum(shift_requests[r][s] * x[(r,s)] for r in total_residents
-            for s in total_shifts))
     
+    shift_model.Maximize(
+        sum(shift_requests[r][w][d][s] * x[(r, w, d, s)] 
+            for r in num_res
+            for w in num_weeks
+            for d in num_days
+            for s in num_shift))
+   
     #Solver
     solver = cp_model.CpSolver()
     solver.Solve(shift_model)
     
-    for r in total_residents:
-        print('Resident ', r)
-        for s in total_shifts:
-            if solver.Value(x[(r,s)]) == 1:
-                if shift_requests[r][s] == 1:
-                    print('Resident ', r, ' works shift ', s, ' (requested)' )
-                else:
-                    print('Resident ', r, ' works shift ', s, ' (not requested)')
+    for r in num_res:
+        total_shifts = 0
+        print('Resident %i' % r )
+        for w in num_weeks:
+            week_shifts = 0
+            print("Week %i" % w)
+            for d in num_days:
+                week_shifts += 1
+                print("Day %i" % d)
+                for s in num_shift:
+                    if solver.Value(x[(r, w, d, s)]) == 1:
+                        total_shifts += 1
+                        if shift_requests[r][w][d][s] == 1:
+                            print("Resident %i works shift %i, (requested)" % (r, s))
+                        else:
+                            print("Resident %i works shift %i, (no requested)" % (r, s))
+                print()
+            print("Week shift: ", week_shifts)
+            print()
+        print("Total shifts: ", total_shifts)
         print()
         
     #Stats
+    num_shift_req = 0 
+    
+    for r in num_res:
+        for w in num_weeks:
+            for d in num_days:
+                for s in num_shift:
+                    num_shift_req += shift_requests[r][w][d][s]
+    
     print()
     print('Statistics')
     print('Number of requests met = %i' % solver.ObjectiveValue(),
-          '(out of %i)' % num_shifts_req)
-    
-    print(x[r,s])
+          '(out of %i)' % num_shift_req)
+    print("Walltime: %f s" %solver.WallTime())
     
 
 if __name__ == '__main__':
