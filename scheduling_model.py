@@ -12,7 +12,7 @@ def main():
     
     #define the variables
     residents = 3
-    weeks = 3
+    weeks = 2
     days = 7
     shifts = 3
     num_res = range(residents)
@@ -53,9 +53,11 @@ def main():
     
    
     # max shifts per week
-    
-    for w in num_weeks:
-        shift_model.Add(sum(x[r, w, d, s] for r in num_res) <= 10)
+    for r in num_res:
+        for w in num_weeks:
+            shift_model.Add(sum(x[r, w, d, s] 
+                                for d in num_days
+                                for s in num_shift) <= 10)
         
     #max days per week
     for r in num_res:
