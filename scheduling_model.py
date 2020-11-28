@@ -69,7 +69,7 @@ def main():
     
     for r in total_residents:
         shift_model.Add(sum(x[r,s] for s in total_shifts) <= 40)
-        shift_model.Add(sum(x[r,s] for s in total_shifts) >= 35)
+        shift_model.Add(sum(x[r,s] for s in total_shifts) >= 30)
       
    
     #3+2 constraint
@@ -110,34 +110,7 @@ def main():
     solver = cp_model.CpSolver()
     solver.Solve(shift_model)
     
-# =============================================================================
-#     for r in total_residents:
-#         num_shifts = 0
-#         print('Resident ', r)
-#         for s in total_shifts:
-#             if solver.Value(x[(r,s)]) == 1:
-#                 num_shifts += 1
-#                 if shift_requests[r][s] == 1:
-#                     print('Resident ', r, ' works shift ', s, ' (requested)' )
-#                 else:
-#                     print('Resident ', r, ' works shift ', s, ' (not requested)')
-#         print('Total Shifts: ', num_shifts)
-#         print()
-# =============================================================================
-        
-# =============================================================================
-#     for r in total_residents:
-#         for s in total_shifts:
-#             print(solver.Value(x[(r,s)]), end=(""))
-#             
-#         print()
-#     for r in total_residents:
-#         print()
-#         for w in range(0, shifts, 21):
-#             print()
-#             for d in range(w, w+21, 3):
-#                 print(solver.Value(z[(r,w,d)]), end="")
-# =============================================================================
+
     
     #Stats
     print()
@@ -146,6 +119,12 @@ def main():
           '(out of %i)' % num_shifts_req)
     print("Walltime: %f s" % solver.WallTime())
     
+    for r in total_residents:
+        num_shifts = 0
+        for s in total_shifts:
+            num_shifts += solver.Value(x[(r,s)])
+        print('Res ', r, ' has ', num_shifts, 'shifts')
+        
     #Grid plot of schedule
     
     shift_matrix = []
