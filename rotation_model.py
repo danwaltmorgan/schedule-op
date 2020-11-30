@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-# np.random.seed(359)
+np.random.seed(359)
 
 ################################################################################
 # Loose ends and sundries
@@ -65,7 +65,7 @@ for r in range(residents):
 for r in range(residents):
     for c in range(clinics):
         rotation_model.Add(sum(x[(r,b,c)] for b in range(blocks)) >= 1) 
-        rotation_model.Add(sum(x[(r,b,c)] for b in range(blocks)) <= 2)
+        rotation_model.Add(sum(x[(r,b,c)] for b in range(blocks)) <= 4)
 
 # c. Each clinic must have one resident from each year
 for b in range(blocks):
@@ -77,7 +77,7 @@ for b in range(blocks):
 for r in range(residents):
    rotation_model.Add(sum(y[(r,b,c)] 
             for b in range(blocks)
-            for c in range(clinics)) == 2)
+            for c in range(clinics)) == 3)
 
 # e. Hard clinics (5-7) should not be back-to-back
 for r in range(residents):
@@ -118,7 +118,10 @@ rotation_model.Minimize(
 ################################################################################
 # 4. Solver
 solver = cp_model.CpSolver()
-status = solver.Solve(rotation_model)
+printer = cp_model.ObjectiveSolutionPrinter()
+status = solver.SolveWithSolutionCallback(rotation_model,printer)
+# status = solver.Solve(rotation_model)
+
 
 
 ################################################################################
@@ -191,4 +194,5 @@ print("Solution = ", solver.ObjectiveValue())
 
 time_elapsed = (time.perf_counter() - time_start)
 print(status)
+print(solver.BestObjectiveBound())
 print("This run took ", time_elapsed)
