@@ -52,6 +52,7 @@ for r in range(residents):
         for c in range(clinics):
             y[(r,b,c)] = rotation_model.NewBoolVar('y_%i%i%i' % (r, b, c))
 
+#resident i works with resident j during block b in clinic c
 z = {}
 for i in range(residents):
     for j in range(residents):
@@ -86,7 +87,7 @@ for r in range(residents):
 for r in range(residents):
    rotation_model.Add(sum(y[(r,b,c)] 
             for b in range(blocks)
-            for c in range(clinics)) == 2)
+            for c in range(clinics)) == 4)
 
 # e. Hard clinics (5-7) should not be back-to-back
 for r in range(residents):
@@ -111,16 +112,14 @@ for b in range(blocks):
     for c in range(clinics):
         rotation_model.Add(sum(y[(r,b,c)] for r in range(residents)) <= 4)
         
-        
+# turns z on if resident i works with resident j for a certain block and clinic        
 for i in range(residents):
     for j in range(residents):
-        works_tot = 0
         for b in range(blocks):
             for c in range(clinics):
                 rotation_model.Add(z[(i,j,b,c)] + 1 >= x[(i,b,c)] + x[(j,b,c)])
                 rotation_model.Add(2 * z[(i,j,b,c)] <= x[(i,b,c)] + x[(j,b,c)])
-                works_tot += z[(i,j,b,c)]
-
+        #makes sure that each resident works with every other resident at least once
         rotation_model.Add(sum(z[(i,j,b,c)] 
                                 for b in range(blocks) 
                                 for c in range(clinics)
@@ -213,6 +212,7 @@ for r in range(residents):
                 text = plt.text(b,r,c, ha = "center", va = "center", color = "black", fontsize = 12)
 
 
+#prints our matrix containing how many times each resident works with every other resident
 for i in range(residents):
     print()
     for j in range(residents):
